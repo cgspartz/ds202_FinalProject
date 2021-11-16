@@ -43,17 +43,58 @@ for (t in seq_along(teamids)) {
   c <- c+1
 }
 ```
+```{r inj-func}
+team_inj <- function(t) {
+  c <- 1
+  #tinj <- data.frame(Player=character(),Game=character(),Injury=character(),year=character(),team=character())
+  tinj <- list()
+  for (y in seq_along(years)) {
+    url <- sprintf("https://www.pro-football-reference.com/teams/%s/%s_injuries.htm",t,years[y])
+    i <- url %>%
+      read_html()%>%
+      html_node('table#team_injuries')%>%
+      html_table()
+    i <- i[c(1:17)]
+    names(i) <- c("Player","Game_1","Game_2","Game_3","Game_4","Game_5","Game_6","Game_7","Game_8","Game_9",
+              "Game_10","Game_11","Game_12","Game_13","Game_14","Game_15","Game_16")
+    i <- i %>% pivot_longer(!c("Player"),names_to = "Game",values_to = "Injury")
+    i <- i %>% separate(Game,c(NA,"Game"),"_")
+    i <- i[!(is.na(i$Injury) | i$Injury==""), ]
+    i <- i %>% mutate(year=years[y],
+                  team=t)
+    tinj[[c]] <- i
+    c <-  c+1
+  }
+  big_inj <- tinj %>% bind_rows()
+}
+```
+
 ```{r inj-tables}
 chil <- read_html("https://www.pro-football-reference.com/teams/chi/2010_injuries.htm")
 i <- chil %>%
   html_node('table#team_injuries')%>%
   html_table()
+i <- i[c(1:17)]
+names(i) <- c("Player","Game_1","Game_2","Game_3","Game_4","Game_5","Game_6","Game_7","Game_8","Game_9",
+              "Game_10","Game_11","Game_12","Game_13","Game_14","Game_15","Game_16")
+i <- i %>% pivot_longer(!c("Player"),names_to = "Game",values_to = "Injury")
+i <- i %>% separate(Game,c(NA,"Game"),"_")
+i <- i[!(is.na(i$Injury) | i$Injury==""), ]
+i <- i %>% mutate(year=2010,
+                  team="chi")
 ```
+```{r}
+t <- team_inj("chi")
+```
+
 ```{r starters}
 chil <- read_html("https://www.pro-football-reference.com/teams/chi/lineups.htm#starting_lineups")
 p <- chil %>%
   html_node('table#starting_lineups')%>%
   html_table()
+p <- p %>% pivot_longer(!c("Year","Record"),names_to = "Position Group",values_to = "Players") %>% filter(Year>2009)
+#p <- p %>% separate(Players,c("Position1","Player1","Position2","Player2","Position3","Player3",
+#                              "Position4","Player4","Position5","Player5","Position6","Player6"), extra="drop")
 ```
 
 
