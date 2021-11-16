@@ -1,0 +1,68 @@
+---
+title: "Injuries in the NFL"
+author: "Christopher Spartz"
+date: "11/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup}
+library(rvest)
+library(stringr)
+library(tidyverse)
+library(ggplot2)
+library(purrr)
+library(lubridate)
+
+#"https://www.pro-football-reference.com/years/2017/" %>% read_html() %>% html_nodes(xpath = '//comment()') %>%    # select comments
+ # html_text() %>%    # extract comment text
+  #paste(collapse = '') %>%    # collapse to single string
+  #read_html() %>%    # reread as HTML
+  #html_node('table#returns') %>%    # select desired node
+  #html_table() 
+
+teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
+           'htx','clt','kan','sdg','rai','den','phi','dal','was','nyg',
+           'min','det','gnb','chi','nor','car','atl','tam','ram','sea',
+           'crd','sfo')
+tm <- "chi"
+years <- c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020")
+injurls <- list()
+rosturls <- list()
+
+
+#page <- "https://www.pro-football-reference.com/teams/chi/2016_injuries.htm" %>% read_html()
+# comments <- page %>% html_nodes(xpath = '//comment()')
+# lapply(comments, paste)
+# injuries <- comments[52] %>%
+#  html_text() %>%    # extract comment text
+#  paste(collapse = '') %>%    # collapse to single string
+#  read_html() %>%    # reread as HTML
+#  html_node('table#team_injuries') 
+#%>%    # select desired node
+ # html_table() 
+
+```
+```{r inj-links}
+c <- 1
+for (y in seq_along(years)) {
+  for (t in seq_along(teamids)) {
+    injurls[c] <- sprintf("https://www.pro-football-reference.com/teams/%s/%s_injuries.htm", teamids[t] , years[y])
+    c <- c+1
+  }
+}
+```
+```{r rost-links}
+c <- 1
+for (t in seq_along(teamids)) {
+  rosturls[c] <- sprintf("https://www.pro-football-reference.com/teams/%s/lineups.htm", teamids[t])
+  c <- c+1
+}
+```
+
+
+
+
