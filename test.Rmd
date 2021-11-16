@@ -9,20 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r setup}
+```{r setup-libs}
 library(rvest)
 library(stringr)
 library(tidyverse)
 library(ggplot2)
 library(purrr)
 library(lubridate)
-
-#"https://www.pro-football-reference.com/years/2017/" %>% read_html() %>% html_nodes(xpath = '//comment()') %>%    # select comments
- # html_text() %>%    # extract comment text
-  #paste(collapse = '') %>%    # collapse to single string
-  #read_html() %>%    # reread as HTML
-  #html_node('table#returns') %>%    # select desired node
-  #html_table() 
 
 teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
            'htx','clt','kan','sdg','rai','den','phi','dal','was','nyg',
@@ -32,19 +25,6 @@ tm <- "chi"
 years <- c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020")
 injurls <- list()
 rosturls <- list()
-
-
-#page <- "https://www.pro-football-reference.com/teams/chi/2016_injuries.htm" %>% read_html()
-# comments <- page %>% html_nodes(xpath = '//comment()')
-# lapply(comments, paste)
-# injuries <- comments[52] %>%
-#  html_text() %>%    # extract comment text
-#  paste(collapse = '') %>%    # collapse to single string
-#  read_html() %>%    # reread as HTML
-#  html_node('table#team_injuries') 
-#%>%    # select desired node
- # html_table() 
-
 ```
 ```{r inj-links}
 c <- 1
@@ -62,6 +42,19 @@ for (t in seq_along(teamids)) {
   c <- c+1
 }
 ```
+```{r inj-tables}
+
+```
+```{r starters}
+#url_off <- read_html("https://www.pro-football-reference.com/teams/chi/lineups.htm")
+#url_off %>%
+#  html_nodes('#div_starting_lineups') %>%
+#  html_text() %>%
+#  read_html() %>%
+#  html_node('table')
+```
+
+
 
 
 
