@@ -16,6 +16,7 @@ library(tidyverse)
 library(ggplot2)
 library(purrr)
 library(lubridate)
+library(RSelenium)
 
 teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
            'htx','clt','kan','sdg','rai','den','phi','dal','was','nyg',
@@ -43,15 +44,16 @@ for (t in seq_along(teamids)) {
 }
 ```
 ```{r inj-tables}
-
+chil <- read_html("https://www.pro-football-reference.com/teams/chi/2010_injuries.htm")
+i <- chil %>%
+  html_node('table#team_injuries')%>%
+  html_table()
 ```
 ```{r starters}
-#url_off <- read_html("https://www.pro-football-reference.com/teams/chi/lineups.htm")
-#url_off %>%
-#  html_nodes('#div_starting_lineups') %>%
-#  html_text() %>%
-#  read_html() %>%
-#  html_node('table')
+chil <- read_html("https://www.pro-football-reference.com/teams/chi/lineups.htm#starting_lineups")
+p <- chil %>%
+  html_node('table#starting_lineups')%>%
+  html_table()
 ```
 
 
