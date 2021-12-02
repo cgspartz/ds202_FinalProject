@@ -27,15 +27,6 @@ years <- c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019"
 injurls <- list()
 rosturls <- list()
 ```
-```{r inj-links}
-c <- 1
-for (y in seq_along(years)) {
-  for (t in seq_along(teamids)) {
-    injurls[c] <- sprintf("https://www.pro-football-reference.com/teams/%s/%s_injuries.htm", teamids[t] , years[y])
-    c <- c+1
-  }
-}
-```
 ```{r rost-links}
 c <- 1
 for (t in seq_along(teamids)) {
@@ -83,18 +74,41 @@ i <- i[!(is.na(i$Injury) | i$Injury==""), ]
 i <- i %>% mutate(year=2010,
                   team="chi")
 ```
-```{r}
-t <- team_inj("chi")
+```{r all-inj}
+teaminj <- list()
+c <- 1
+for (t in seq_along(teamids)) {
+  teaminj[[c]] <- team_inj(teamids[[t]])
+  c <- c+1
+}
+all_inj <- teaminj %>% bind_rows()
 ```
 
+```{r}
+all_inj %>% group_by(Injury) %>% count(Injury)
+```
+
+
 ```{r starters}
+library(xml2)
 chil <- read_html("https://www.pro-football-reference.com/teams/chi/lineups.htm#starting_lineups")
 p <- chil %>%
-  html_node('table#starting_lineups')%>%
-  html_table()
+  html_node('table#starting_lineups')
+xml_find_all(p, ".//br") %>% xml_add_sibling("p", "\n")
+
+xml_find_all(p, ".//br") %>% xml_remove()
+p <- p %>% html_table()
 p <- p %>% pivot_longer(!c("Year","Record"),names_to = "Position Group",values_to = "Players") %>% filter(Year>2009)
-#p <- p %>% separate(Players,c("Position1","Player1","Position2","Player2","Position3","Player3",
-#                              "Position4","Player4","Position5","Player5","Position6","Player6"), extra="drop")
+p1 <- p %>% separate(Players,c("Player_1","Player_2","Player_3","Player_4","Player_5","Player_6"),sep = "\n")
+p1
+```
+
+```{r starter-data}
+p1 <- p1 %>% pivot_longer(!c("Year","Record","Position Group"),names_to = "Field")
+#p1 <- p1 %>% separate(Field,c("Type","Player"),sep = "_")
+#p2 <- p1 %>% mutate(value = str_replace(value, "\\s", "|")) %>% 
+#  separate(value, into = c("Position", "Player Name"), sep = "\\|")
+#p2
 ```
 
 
