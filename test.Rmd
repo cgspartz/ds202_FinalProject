@@ -23,7 +23,7 @@ teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
            'htx','clt','kan','sdg','rai','den','phi','dal','was','nyg',
            'min','det','gnb','chi','nor','car','atl','tam','ram','sea',
            'crd','sfo')
-years <- c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020")
+years <- c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020)
 ```
 
 ```{r inj-func}
@@ -31,7 +31,7 @@ team_inj <- function(t) {
   c <- 1
   tinj <- list()
   for (y in seq_along(years)) {
-    url <- sprintf("https://www.pro-football-reference.com/teams/%s/%s_injuries.htm",t,years[y])
+    url <- sprintf("https://www.pro-football-reference.com/teams/%s/%d_injuries.htm",t,years[y])
     i <- url %>%
       read_html()%>%
       html_node('table#team_injuries')%>%
@@ -62,6 +62,9 @@ all_inj <- teaminj %>% bind_rows()
 ```
 
 ```{r}
+all_inj <- all_inj %>% filter(Injury!="//")
+all_inj <- all_inj %>% filter(Injury!="//;90")
+all_inj$Injury <- as.factor(all_inj$Injury)
 all_inj %>% group_by(Injury) %>% count(Injury)
 ```
 
@@ -84,6 +87,7 @@ team_starters <- function(t) {
     separate(value, into = c("Position", "Player"), sep = "\\|")
   p3$"Player" <- str_remove_all(p3$'Player','[*+]')
   p3 <- p3 %>% select(-Field)
+  p3 <- p3 %>% mutate(team=t)
 }
 ```
 
@@ -98,9 +102,33 @@ all_starters <- teamStart %>% bind_rows()
 all_starters$Player <- as.factor(all_starters$Player)
 ```
 
+
 ```{r join-dbs}
-alltogether <- all_starters %>% inner_join(all_inj, by="Player")
+all_starters$Player <- str_trim(all_starters$Player)
+alltogether <- all_starters %>% rename(year=Year) %>% inner_join(all_inj, by=c("Player","year","team"))
 ```
+
+
+```{r inj-by-year}
+all_inj %>% group_by(Injury,year) %>% count(Injury) %>% unique() %>%
+  ggplot(aes(x=Injury,y=n, fill=Injury)) +
+  geom_bar(stat = "Identity") + 
+  facet_wrap(~year)
+```
+
+```{r}
+alltogether %>% group_by(Position) %>% count(Position)
+```
+
+
+
+```{r inj-by-position}
+alltogether %>% group_by(Injury,Position) %>% count(Injury) %>%
+  ggplot(aes(x=Injury,y=n, fill=Injury)) +
+  geom_bar(stat = "Identity") + 
+  facet_wrap(~Position)
+```
+
 
 
 
