@@ -174,50 +174,90 @@ pre code {
 
 <pre class="r"><code>library(rvest)
 library(stringr)
-library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
-## ✓ tibble  3.1.3     ✓ dplyr   1.0.7
-## ✓ tidyr   1.1.3     ✓ forcats 0.5.1
-## ✓ readr   2.0.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## x dplyr::filter()         masks stats::filter()
-## x readr::guess_encoding() masks rvest::guess_encoding()
-## x dplyr::lag()            masks stats::lag()</code></pre>
-<pre class="r"><code>library(ggplot2)
+library(tidyverse)
+library(ggplot2)
 library(purrr)
-library(lubridate)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;lubridate&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     date, intersect, setdiff, union</code></pre>
-<pre class="r"><code>teamids &lt;- c(&#39;mia&#39;,&#39;nwe&#39;,&#39;buf&#39;,&#39;nyj&#39;,&#39;pit&#39;,&#39;rav&#39;,&#39;cin&#39;,&#39;cle&#39;,&#39;jax&#39;,&#39;oti&#39;,
+library(lubridate)
+library(xml2)
+
+teamids &lt;- c(&#39;mia&#39;,&#39;nwe&#39;,&#39;buf&#39;,&#39;nyj&#39;,&#39;pit&#39;,&#39;rav&#39;,&#39;cin&#39;,&#39;cle&#39;,&#39;jax&#39;,&#39;oti&#39;,
            &#39;htx&#39;,&#39;clt&#39;,&#39;kan&#39;,&#39;sdg&#39;,&#39;rai&#39;,&#39;den&#39;,&#39;phi&#39;,&#39;dal&#39;,&#39;was&#39;,&#39;nyg&#39;,
            &#39;min&#39;,&#39;det&#39;,&#39;gnb&#39;,&#39;chi&#39;,&#39;nor&#39;,&#39;car&#39;,&#39;atl&#39;,&#39;tam&#39;,&#39;ram&#39;,&#39;sea&#39;,
            &#39;crd&#39;,&#39;sfo&#39;)
-tm &lt;- &quot;chi&quot;
-years &lt;- c(&quot;2010&quot;,&quot;2011&quot;,&quot;2012&quot;,&quot;2013&quot;,&quot;2014&quot;,&quot;2015&quot;,&quot;2016&quot;,&quot;2017&quot;,&quot;2018&quot;,&quot;2019&quot;,&quot;2020&quot;)
-injurls &lt;- list()
-rosturls &lt;- list()</code></pre>
-<pre class="r"><code>c &lt;- 1
-for (y in seq_along(years)) {
-  for (t in seq_along(teamids)) {
-    injurls[c] &lt;- sprintf(&quot;https://www.pro-football-reference.com/teams/%s/%s_injuries.htm&quot;, teamids[t] , years[y])
-    c &lt;- c+1
+years &lt;- c(&quot;2010&quot;,&quot;2011&quot;,&quot;2012&quot;,&quot;2013&quot;,&quot;2014&quot;,&quot;2015&quot;,&quot;2016&quot;,&quot;2017&quot;,&quot;2018&quot;,&quot;2019&quot;,&quot;2020&quot;)</code></pre>
+<pre class="r"><code>team_inj &lt;- function(t) {
+  c &lt;- 1
+  #tinj &lt;- data.frame(Player=character(),Game=character(),Injury=character(),year=character(),team=character())
+  tinj &lt;- list()
+  for (y in seq_along(years)) {
+    url &lt;- sprintf(&quot;https://www.pro-football-reference.com/teams/%s/%s_injuries.htm&quot;,t,years[y])
+    i &lt;- url %&gt;%
+      read_html()%&gt;%
+      html_node(&#39;table#team_injuries&#39;)%&gt;%
+      html_table()
+    i &lt;- i[c(1:17)]
+    names(i) &lt;- c(&quot;Player&quot;,&quot;Game_1&quot;,&quot;Game_2&quot;,&quot;Game_3&quot;,&quot;Game_4&quot;,&quot;Game_5&quot;,&quot;Game_6&quot;,&quot;Game_7&quot;,&quot;Game_8&quot;,&quot;Game_9&quot;,
+              &quot;Game_10&quot;,&quot;Game_11&quot;,&quot;Game_12&quot;,&quot;Game_13&quot;,&quot;Game_14&quot;,&quot;Game_15&quot;,&quot;Game_16&quot;)
+    i &lt;- i %&gt;% pivot_longer(!c(&quot;Player&quot;),names_to = &quot;Game&quot;,values_to = &quot;Injury&quot;)
+    i &lt;- i %&gt;% separate(Game,c(NA,&quot;Game&quot;),&quot;_&quot;)
+    i &lt;- i[!(is.na(i$Injury) | i$Injury==&quot;&quot;), ]
+    i &lt;- i %&gt;% mutate(year=years[y],
+                  team=t)
+    i$Player &lt;- as.factor(i$Player)
+    tinj[[c]] &lt;- i
+    c &lt;-  c+1
   }
+  big_inj &lt;- tinj %&gt;% bind_rows()
 }</code></pre>
-<pre class="r"><code>c &lt;- 1
+<pre class="r"><code>teaminj &lt;- list()
+c &lt;- 1
 for (t in seq_along(teamids)) {
-  rosturls[c] &lt;- sprintf(&quot;https://www.pro-football-reference.com/teams/%s/lineups.htm&quot;, teamids[t])
+  teaminj[[c]] &lt;- team_inj(teamids[[t]])
   c &lt;- c+1
+}
+all_inj &lt;- teaminj %&gt;% bind_rows()</code></pre>
+<pre class="r"><code>all_inj %&gt;% group_by(Injury) %&gt;% count(Injury)</code></pre>
+<pre><code>## # A tibble: 10 × 2
+## # Groups:   Injury [10]
+##    Injury     n
+##    &lt;chr&gt;  &lt;int&gt;
+##  1 //         7
+##  2 //;90      3
+##  3 C19      506
+##  4 D       2812
+##  5 IR     45343
+##  6 O      10979
+##  7 P      15361
+##  8 PUP     1381
+##  9 Q      11330
+## 10 S        178</code></pre>
+<pre class="r"><code>team_starters &lt;- function(t) {
+  url &lt;- sprintf(&quot;https://www.pro-football-reference.com/teams/%s/lineups.htm#starting_lineups&quot;,t)
+  lin &lt;- read_html(url)
+  p &lt;- lin %&gt;%
+    html_node(&#39;table#starting_lineups&#39;)
+  
+  xml_find_all(p, &quot;.//br&quot;) %&gt;% xml_add_sibling(&quot;p&quot;, &quot;\n&quot;)
+
+  xml_find_all(p, &quot;.//br&quot;) %&gt;% xml_remove()
+  p &lt;- p %&gt;% html_table()
+  p &lt;- p %&gt;% pivot_longer(!c(&quot;Year&quot;,&quot;Record&quot;),names_to = &quot;Position Group&quot;,values_to = &quot;Players&quot;) %&gt;% filter(Year&gt;2009)
+  p1 &lt;- p %&gt;% separate(Players,c(&quot;Player_1&quot;,&quot;Player_2&quot;,&quot;Player_3&quot;,&quot;Player_4&quot;,&quot;Player_5&quot;,&quot;Player_6&quot;),sep = &quot;\n&quot;)
+  p2 &lt;- p1 %&gt;% pivot_longer(!c(&quot;Year&quot;,&quot;Record&quot;,&quot;Position Group&quot;),names_to = &quot;Field&quot;) %&gt;% na.omit()
+  p3 &lt;- p2 %&gt;% mutate(value = str_replace(value, &quot;\\s&quot;, &quot;|&quot;)) %&gt;% 
+    separate(value, into = c(&quot;Position&quot;, &quot;Player&quot;), sep = &quot;\\|&quot;)
+  p3$&quot;Player&quot; &lt;- str_remove_all(p3$&#39;Player&#39;,&#39;[*+]&#39;)
+  p3 &lt;- p3 %&gt;% select(-Field)
 }</code></pre>
-<pre class="r"><code>#url_off &lt;- read_html(&quot;https://www.pro-football-reference.com/teams/chi/lineups.htm&quot;)
-#url_off %&gt;%
-#  html_nodes(&#39;#div_starting_lineups&#39;) %&gt;%
-#  html_text() %&gt;%
-#  read_html() %&gt;%
-#  html_node(&#39;table&#39;)</code></pre>
+<pre class="r"><code>teamStart &lt;- list()
+c &lt;- 1
+for (t in seq_along(teamids)) {
+  teamStart[[c]] &lt;- team_starters(teamids[[t]])
+  c &lt;- c+1
+}
+all_starters &lt;- teamStart %&gt;% bind_rows()
+all_starters$Player &lt;- as.factor(all_starters$Player)</code></pre>
+<pre class="r"><code>alltogether &lt;- all_starters %&gt;% inner_join(all_inj, by=&quot;Player&quot;)</code></pre>
 
 
 

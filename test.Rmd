@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
 ```{r setup-libs}
@@ -15,7 +16,7 @@ library(stringr)
 library(tidyverse)
 library(ggplot2)
 library(purrr)
-library(lubridate)
+#library(lubridate)
 library(xml2)
 
 teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
@@ -24,10 +25,10 @@ teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
            'crd','sfo')
 years <- c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020")
 ```
+
 ```{r inj-func}
 team_inj <- function(t) {
   c <- 1
-  #tinj <- data.frame(Player=character(),Game=character(),Injury=character(),year=character(),team=character())
   tinj <- list()
   for (y in seq_along(years)) {
     url <- sprintf("https://www.pro-football-reference.com/teams/%s/%s_injuries.htm",t,years[y])
@@ -43,6 +44,7 @@ team_inj <- function(t) {
     i <- i[!(is.na(i$Injury) | i$Injury==""), ]
     i <- i %>% mutate(year=years[y],
                   team=t)
+    i$Player <- as.factor(i$Player)
     tinj[[c]] <- i
     c <-  c+1
   }
@@ -86,29 +88,21 @@ team_starters <- function(t) {
 ```
 
 ```{r}
-start <- team_starters("dal")
-start
+teamStart <- list()
+c <- 1
+for (t in seq_along(teamids)) {
+  teamStart[[c]] <- team_starters(teamids[[t]])
+  c <- c+1
+}
+all_starters <- teamStart %>% bind_rows()
+all_starters$Player <- as.factor(all_starters$Player)
+```
+
+```{r join-dbs}
+alltogether <- all_starters %>% inner_join(all_inj, by="Player")
 ```
 
 
-```{r starters}
-url <- sprintf("https://www.pro-football-reference.com/teams/%s/lineups.htm#starting_lineups",t)
-chil <- read_html("https://www.pro-football-reference.com/teams/det/lineups.htm#starting_lineups")
-p <- chil %>%
-  html_node('table#starting_lineups')
-xml_find_all(p, ".//br") %>% xml_add_sibling("p", "\n")
-
-xml_find_all(p, ".//br") %>% xml_remove()
-p <- p %>% html_table()
-p <- p %>% pivot_longer(!c("Year","Record"),names_to = "Position Group",values_to = "Players") %>% filter(Year>2009)
-p1 <- p %>% separate(Players,c("Player_1","Player_2","Player_3","Player_4","Player_5","Player_6"),sep = "\n")
-p2 <- p1 %>% pivot_longer(!c("Year","Record","Position Group"),names_to = "Field") %>% na.omit()
-p3 <- p2 %>% mutate(value = str_replace(value, "\\s", "|")) %>% 
-  separate(value, into = c("Position", "Player"), sep = "\\|")
-p3$"Player" <- str_remove_all(p3$'Player','[*+]')
-p3 <- p3 %>% select(-Field)
-p3
-```
 
 
 
