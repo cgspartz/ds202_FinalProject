@@ -64,7 +64,9 @@ all_inj <- teaminj %>% bind_rows()
 ```{r}
 all_inj <- all_inj %>% filter(Injury!="//")
 all_inj <- all_inj %>% filter(Injury!="//;90")
+all_inj <- all_inj %>% filter(Injury!="S")
 all_inj$Injury <- as.factor(all_inj$Injury)
+all_inj$Injury <- factor(all_inj$Injury,levels = c("C19","P","Q","D","O","IR","PUP"))
 all_inj %>% group_by(Injury) %>% count(Injury)
 ```
 
@@ -100,13 +102,31 @@ for (t in seq_along(teamids)) {
 }
 all_starters <- teamStart %>% bind_rows()
 all_starters$Player <- as.factor(all_starters$Player)
+all_starters$Position <- factor(all_starters$Position,levels = c("QB","RB","FB","WR","TE","LT","LG","C",
+                                                                 "RG","RT","LDT","RDT","DE","DT","NT","LDE","RDE",
+                                                                 "LOLB","LILB","RILB","ROLB","LLB","MLB","RLB",
+                                                                 "LCB","RCB","CB","DB","SS","FS","PR","KR"))
+all_starters <- all_starters %>% separate(Record,c("Wins","Losses","Ties"), sep = "-")
+all_starters$Wins <- as.numeric(all_starters$Wins)
+all_starters$Losses <- as.numeric(all_starters$Losses)
+all_starters$Ties <- as.numeric(all_starters$Ties)
 ```
 
 
 ```{r join-dbs}
 all_starters$Player <- str_trim(all_starters$Player)
 alltogether <- all_starters %>% rename(year=Year) %>% inner_join(all_inj, by=c("Player","year","team"))
+alltogether$team <- as.factor(alltogether$team)
 ```
+
+Injuries are split into 8 categories these represent:<br />
+C19 stands for a player was reported as having had covid 19, this only shows up in last years data, but I thought it was interesting so I kept it in. <br />
+P stands for probable, and when a team reports a player as probable that means that he has a 75% chance of playing <br />
+Q stands for questionable, and when a team reports a player as questionable that means that he has a 50% chance of playing <br />
+D stands for doubtful, and when a team reports a player as doubtful that means that he has a 25% chance of playing <br />
+O stands for out, which means that player can't play that week but is not put onto the injured reserve or PUP <br />
+IR stands for Injured Reserve, which is a list that teams can put players onto that means that player is unable to play that week and it opens up a spot for an uninjured player to play that week. <br />
+PUP means the player is on the physically unable to perform list which means that they cannot play or practice with the team for the first 6 weeks but they can still attend meetings and use the medical/training facilities. <br />
 
 
 ```{r inj-by-year}
@@ -116,20 +136,33 @@ all_inj %>% group_by(Injury,year) %>% count(Injury) %>% unique() %>%
   facet_wrap(~year)
 ```
 
-```{r}
-alltogether %>% group_by(Position) %>% count(Position)
-```
 
 
-
-```{r inj-by-position}
-alltogether %>% group_by(Injury,Position) %>% count(Injury) %>%
+```{r inj-by-position, fig.height=10, fig.width=10}
+impPos <- alltogether[!(alltogether$Position=="DE" | alltogether$Position=="DT" | 
+                          alltogether$Position=="CB" | alltogether$Position=="DB"),]
+impPos %>% group_by(Injury,Position) %>% count(Injury) %>%
   ggplot(aes(x=Injury,y=n, fill=Injury)) +
   geom_bar(stat = "Identity") + 
-  facet_wrap(~Position)
+  ggtitle("Injuries by position") +
+  ylab("Weeks spent with injuries") +
+  facet_wrap(~Position,ncol = 4)
+```
+In this graph all of the positions before LDE are offensive position, while all of the positions after LDE and including LDE are defensive positions.
+This graph shows how some positions, like WR, which are the positions that 
+
+
+```{r winpercent}
+alltogether %>% group_by(team,year) %>% 
+  mutate(teaminjs=n(), winp=(Wins+0.5*Ties)/16) %>%
+  ggplot(aes(x=winp,y=teaminjs, color=team)) + 
+  geom_point() +
+  geom_smooth(method=lm , color="black", se=FALSE) +
+  facet_wrap(~year)
 ```
 
 
+This graph shows 
 
 
 
