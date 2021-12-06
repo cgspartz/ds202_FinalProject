@@ -130,10 +130,16 @@ PUP means the player is on the physically unable to perform list which means tha
 
 
 ```{r inj-by-year}
-all_inj %>% group_by(Injury,year) %>% count(Injury) %>% unique() %>%
-  ggplot(aes(x=Injury,y=n, fill=Injury)) +
-  geom_bar(stat = "Identity") + 
-  facet_wrap(~year)
+library(ggrepel)
+all_inj %>% group_by(Injury,year) %>% count(Injury) %>% unique() %>% filter(Injury!="C19") %>%
+  mutate(label = if_else(year == 2020, as.character(Injury), NA_character_)) %>%
+  ggplot(aes(x=year,y=n, group=Injury , color=Injury)) +
+  geom_line() + 
+  geom_label_repel(aes(label = label),
+                  nudge_x = 1,
+                  na.rm = TRUE) +
+  ylab("Games with a player placed in each injury Category") +
+  ggtitle("Games with a player in an injury group from 2010-2020")
 ```
 
 
@@ -164,6 +170,13 @@ alltogether %>% group_by(team,year) %>%
 
 This graph shows 
 
+```{r inj-win-team, fig.height=6, fig.width=10}
+alltogether %>% group_by(team,year) %>% 
+  mutate(teaminjs=n(), winp=(Wins+0.5*Ties)/16) %>%
+  ggplot(aes(x=winp,y=teaminjs,color=team))  +
+  geom_smooth(method=lm , color="black", se=FALSE) +
+  geom_point() + facet_wrap(~team,ncol = 8)
+```
 
 
 
