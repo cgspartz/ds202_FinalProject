@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 ### Background Information
-Since I have finished wrangling the data, I will take some time to explain what the NFL and American Football are. Firstly, the NFL is the professional league of American Football in the U.S. and it is easily the most popular sport in the U.S. The goal of a game of American Football is to score more points than the other team, and in order to score points you must bring the football to your endzone at one end of the field. While one team on the offense attempts to score in the endzone, the other team attempts to stop the offense using their defense who can tackle opposing players to make a play stop where the player with the football was tackled. Those tackles can easily lead to injuries, which is what the focus of my analysis today is about. <br />
+I will take some time to explain what the NFL and American Football are, since not everyone nows what American football is. Firstly, the NFL is the professional league of American Football in the U.S. and it is easily the most popular sport in the U.S. The goal of a game of American Football is to score more points than the other team, and in order to score points you must bring the football to your endzone at one end of the field. While one team on the offense attempts to score in the endzone, the other team attempts to stop the offense using their defense who can tackle opposing players to make a play stop where the player with the football was tackled. Those tackles can easily lead to injuries, which is what the focus of my analysis today is about. <br />
 
 ### Questions
 Before I started working with this data I had a few questions that I was hoping to answer: <br />
