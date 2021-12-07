@@ -9,7 +9,18 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
+### Background Information
+Since I have finished wrangling the data, I will take some time to explain what the NFL and American Football are. Firstly, the NFL is the professional league of American Football in the U.S. and it is easily the most popular sport in the U.S. The goal of a game of American Football is to score more points than the other team, and in order to score points you must bring the football to your endzone at one end of the field. While one team on the offense attempts to score in the endzone, the other team attempts to stop the offense using their defense who can tackle opposing players to make a play stop where the player with the football was tackled. Those tackles can easily lead to injuries, which is what the focus of my analysis today is about. <br />
 
+### Questions
+Before I started working with this data I had a few questions that I was hoping to answer: <br />
+1. Have the number of injuries to player gone up in recent years? <br />
+2. What position tends to get injured more than others? <br />
+3. How do injuries to players affect the winning percentage of teams? <br />
+4. What teams are best at not getting injured? <br />
+5. What team can win despite injuries? <br />
+
+### Data Wrangling
 ```{r setup-libs}
 library(rvest)
 library(stringr)
@@ -25,6 +36,8 @@ teamids <- c('mia','nwe','buf','nyj','pit','rav','cin','cle','jax','oti',
            'crd','sfo')
 years <- c(2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020)
 ```
+
+Starting off this exploration into team reported injuries in the NFL from 2010 to 2020 we have the initial setup here where I create the functions to scrape the Pro Football Reference and input that data into 2 data frames that I then join in order to get access to all of that data that I need to analyze the injuries reported over this time span. 
 
 ```{r inj-func}
 team_inj <- function(t) {
@@ -67,9 +80,9 @@ all_inj <- all_inj %>% filter(Injury!="//;90")
 all_inj <- all_inj %>% filter(Injury!="S")
 all_inj$Injury <- as.factor(all_inj$Injury)
 all_inj$Injury <- factor(all_inj$Injury,levels = c("C19","P","Q","D","O","IR","PUP"))
-all_inj %>% group_by(Injury) %>% count(Injury)
 ```
 
+In the team_inj function I grab all of the webpages of injuries for a team over a time span which look like [This](https://www.pro-football-reference.com/teams/sdg/2020_injuries.htm) and place the reported injuries of one team into one big data frame. In order to the clean the data that I got from the website I had to rename a large number of the columns and then pivot longer to get the data into a more usable format. After I am done creating the team_inj function I invoke inside of a loop and create a data frame of injuries for each team, which then get bound together into one extremely large data frame. Finally, I take out some of the injury classifications that are not importan to my analysis and set the injuries to appropiate factor levels. 
 
 ```{r starter-func}
 team_starters <- function(t) {
@@ -112,12 +125,15 @@ all_starters$Losses <- as.numeric(all_starters$Losses)
 all_starters$Ties <- as.numeric(all_starters$Ties)
 ```
 
+In order to find the starters of every team in the NFL over this time span I went to sites like [This](https://www.pro-football-reference.com/teams/chi/lineups.htm) which have a list of every starter for a team in its history. The wrangling of this data was a little more difficult as the player names had to moved around a bit in order to get every Starting player's name so that then I could join the two data frames together. Otherwise the process for finding the starters for each team was fairly similar to getting the injury information.
 
 ```{r join-dbs}
 all_starters$Player <- str_trim(all_starters$Player)
 alltogether <- all_starters %>% rename(year=Year) %>% inner_join(all_inj, by=c("Player","year","team"))
 alltogether$team <- as.factor(alltogether$team)
 ```
+
+
 
 Injuries are split into 8 categories these represent:<br />
 C19 stands for a player was reported as having had covid 19, this only shows up in last years data, but I thought it was interesting so I kept it in. <br />
@@ -127,7 +143,9 @@ D stands for doubtful, and when a team reports a player as doubtful that means t
 O stands for out, which means that player can't play that week but is not put onto the injured reserve or PUP <br />
 IR stands for Injured Reserve, which is a list that teams can put players onto that means that player is unable to play that week and it opens up a spot for an uninjured player to play that week. <br />
 PUP means the player is on the physically unable to perform list which means that they cannot play or practice with the team for the first 6 weeks but they can still attend meetings and use the medical/training facilities. <br />
+Something else that needs to be mentioned before looking at the first graph here is that the data that I am using here is flawed, since it requires the team to report the condition of a player to the NFL which is something that does not always happen. There are going to be injuries that missed by the data here since the team or player may not have reported it. It shouldn't affect the data all that much, but I still think that it is an important thing to discuss before I start analyzing the data.
 
+### Injury reports over the Years
 
 ```{r inj-by-year}
 library(ggrepel)
@@ -141,8 +159,13 @@ all_inj %>% group_by(Injury,year) %>% count(Injury) %>% unique() %>% filter(Inju
   ylab("Games with a player placed in each injury Category") +
   ggtitle("Games with a player in an injury group from 2010-2020")
 ```
+Analyzing the graph itself most of the injury designations have not experienced much of a change from earlier years. The exception to this is the Injured Reserve(IR) which is most likely due to the change in rules on the IR, which allowed for teams to be able to take more players off of the IR throughout the season. Overall there was not really enough of a change in number of injuries to make it significant which surprised me since each year it feels like more and more players are getting injured, but that might be because people pay more attention to the injuries then they used to.
 
 
+
+While the previous graph looked at all injuries over the period spanning 2010-2020, the remaining graphs will only look at the injuries that starting players sustained. The criteria for who is a starter is that they were reported as a starter at the begining of a season which means that they'll appear on a Pro Football Reference page like [This](https://www.pro-football-reference.com/teams/chi/lineups.htm). The reason that I made this decision is that injuries to backups tend to have a lesser impact on the game as a whole since most starters play almost every play of a typical football game. Additionally, when a starter is injured that often means that a team will have to adjust its game plan and that can seriously change how a team approaches a game and can affect the overall outcome of the game.
+
+### Number of times reported as injured by position
 
 ```{r inj-by-position, fig.height=10, fig.width=10}
 impPos <- alltogether[!(alltogether$Position=="DE" | alltogether$Position=="DT" | 
@@ -154,12 +177,16 @@ impPos %>% group_by(Injury,Position) %>% count(Injury) %>%
   ylab("Weeks spent with injuries") +
   facet_wrap(~Position,ncol = 4)
 ```
-In this graph all of the positions before LDE are offensive position, while all of the positions after LDE and including LDE are defensive positions.
-This graph shows how some positions, like WR, which are the positions that 
+In this graph all of the positions before LDE are offensive position, while all of the positions after LDE and including LDE are defensive positions. <br />
+This graph shows how some positions, like WR, RB, TE, and QB, which are the positions that tend to be the ones getting tackled the most. Those positions are also some of the most important positions for an offense to function correctly. On the defensive end of the spectrum the LCB, RCB, SS and FS are the positions that get injured a bit more, but there is not as large of a difference between number of injuries per position like on the offensive side of the game. The positions listed earlier for the defense make sense in this situation since those positions are the ones that guard the WR,TE and RBs and tackle them.
+This graph definitely shows that some positions get injured far more than other positions, especially WRs and RBs.
 
+### League wide injuries vs. winning percentage throughout each year
 
+For the next 2 graphs I removed all of the times that a player was reported as probable since NFL teams stopped reporting players as probable in 2015, which led to inconsistent data being presented in this graph.<br />
 ```{r winpercent}
-alltogether %>% group_by(team,year) %>% 
+nopr <- alltogether %>% filter(Injury!="P")
+nopr %>% group_by(team,year) %>% 
   mutate(teaminjs=n(), winp=(Wins+0.5*Ties)/16) %>%
   ggplot(aes(x=winp,y=teaminjs, color=team)) + 
   geom_point() +
@@ -168,19 +195,21 @@ alltogether %>% group_by(team,year) %>%
 ```
 
 
-This graph shows 
+This graph shows that on average the best teams in the league tend to have less injuries. Just because less injured teams tend to have a better winning percentage does not mean that that is always the case like in 2012 and 2013 where a couple of teams who had lost a fair number of starters were able to win a lot of games. 
+Overall a team has a better chance of winning if they have less injuries, which is a concept that makes total sense since it is difficult to adjust to losing a player in a game due to injury.
 
+
+### Winning percentage of teams compared to the number of Injuries
 ```{r inj-win-team, fig.height=6, fig.width=10}
-alltogether %>% group_by(team,year) %>% 
+nopr %>% group_by(team,year) %>% 
   mutate(teaminjs=n(), winp=(Wins+0.5*Ties)/16) %>%
   ggplot(aes(x=winp,y=teaminjs,color=team))  +
   geom_smooth(method=lm , color="black", se=FALSE) +
   geom_point() + facet_wrap(~team,ncol = 8)
 ```
+After looking at the last graph the question that comes up is how well does each team deal with injuries to their starters in a season. This chart attempts determine that, and also see what teams tend to deal with the most injuries. Some teams like the Chicago Bears(chi) and the Los Angeles Chargers (sdg) do not tend to deal with injuries very well and also tend to deal with a fair number of injuries. On the other side of the coin there are teams like the Atlanta Falcons (atl) and the Pittsburgh Steelers (pit) tend to not get injured much and win more often than other teams that get more injuries. Finally there are the New England Patriots(nwe) who tend to deal with injuries extremely well, even when they deal with a large number of injuries they still tend to have one of the highest winning percentages over this time span. However, even a team that deals with injuries extremely well like the Patriots can still struggle to win as many games as normal when they have a lot of injuries to starters.  
+Overall this graph shows that most teams tend to win more when less starters are injured.
 
 
-
-
-
-
-
+### Conclusion
+In conclusion after looking at the questions that I posed it surprised me at the the fact that injuries seem to have stayed the same, and that injuries do have an impact on how teams perform, but the number of injuries to starters does not necessarily directly correlate to the overall winning percentage of teams. The number of injuries in the NFL are still fairly high which is an issue that the NFL is working to change. I hope that someday the number of injuries in the NFL will be insignificant to the players in the NFL and the outcome of the games.
